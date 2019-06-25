@@ -1,2 +1,2 @@
-# GenCppDocstrings
-Generate Cpp Docstrings using libclang
+# GenCppDoc
+Generate blank C++ Function and Class Doxygen docs using libclang
