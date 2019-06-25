@@ -12,6 +12,8 @@ from collections import OrderedDict
 llvm_lib_path = subprocess.check_output(['llvm-config', '--libdir']) ## hacky bit to ensure we are loading the correct libclang.so
 cl.Config.set_library_path(llvm_lib_path.decode('utf-8')[0:-1])
 
+includes = subprocess.check_output(['llvm-config', '--includedir'])
+
 type_mapping = {
   cl.CursorKind.CONSTRUCTOR: "function",
   cl.CursorKind.DESTRUCTOR: "function",
@@ -91,18 +93,23 @@ class CppDocWriter():
     self.filename = filename
     self.src_file = open(filename, 'r')
     self.file_data = self.src_file.readlines()
-    self.src_file.close()
+    ##self.src_file.close()
     self.file_nodes = self.parse()
 
   ''' Parse a source file using libclang to get information about the nodes in this file '''
   def parse(self):
     index = cl.Index.create()
-    tu = index.parse(self.filename, '64')
+    tu = index.parse(self.filename, args=['-x', 'c++', '--std=c++17', '-I'+includes[0:-1]+'/c++/v1'], options=1)
+    diag = tu.diagnostics
+    for i in diag:
+      print(i)
     children = tu.cursor.walk_preorder()
 
     nodes = list()
 
     for src_node in children:
+      if 'clear' in src_node.spelling:
+        print(src_node.kind)
       if src_node.kind in type_mapping.keys() and src_node.location.file.name == self.filename:
         if type_mapping[src_node.kind] == 'function':
           arg_list = [arg.displayname for arg in src_node.get_arguments()]
@@ -118,6 +125,7 @@ class CppDocWriter():
     docstrings = OrderedDict()
 
     for n in self.file_nodes:
+      node_dump(n)
       docstrings[n.line] = dsb.build(n).get()
       dsb.clear()
 
@@ -134,7 +142,6 @@ class CppDocWriter():
     with open(self.filename, 'w') as outfile:
       for line in self.file_data:
         outfile.write(line)
-    
 
 def main():
   parser = argparse.ArgumentParser(description='Generate blank docstrings for all functions and classes in CPP source file')
