@@ -23,6 +23,7 @@ type_mapping = {
   cl.CursorKind.STRUCT_DECL: "class",
 }
 
+Node = namedtuple('Node', ['type', 'name', 'line', 'func_args', 'ret_type'])
 
 ''' Dump node information '''
 def node_dump(n):
@@ -47,7 +48,7 @@ class DocStringBuilder():
         self.add_return(n)
     self.add_doc_end()
     return self
-  
+
   ''' Get the docstring from this instance '''
   def get(self):
     return self.outstring
@@ -71,7 +72,7 @@ class DocStringBuilder():
     if n.ret_type != 'void':
       self.outstring += ' *  \\return\n'
 
-  ''' Add docstring initilizer to the docstring '''  
+  ''' Add docstring initilizer to the docstring '''
   def add_doc_begin(self):
     self.outstring = '/** '
 
@@ -90,14 +91,15 @@ class CppDocWriter():
     self.filename = filename
     self.src_file = open(filename, 'r')
     self.file_data = self.src_file.readlines()
-    self.file_nodes = self.parse()  
+    self.src_file.close()
+    self.file_nodes = self.parse()
 
   ''' Parse a source file using libclang to get information about the nodes in this file '''
   def parse(self):
     index = cl.Index.create()
     tu = index.parse(self.filename, '64')
     children = tu.cursor.walk_preorder()
-    
+
     nodes = list()
 
     for src_node in children:
