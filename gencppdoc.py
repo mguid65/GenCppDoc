@@ -113,10 +113,13 @@ class CppDocWriter():
 
     for src_node in children:
       if src_node.kind in type_mapping.keys() and src_node.location.file.name == self.filename:
-        if type_mapping[src_node.kind] == 'function':
+        if type_mapping[src_node.kind] == 'function': # handle kinds that look like functions
           arg_list = [arg.displayname for arg in src_node.get_arguments()]
+
+          if arg_list == [] or arg_list[0] == '': # sometimes due to formatting, parameters are missed so, manually walk and get them
+            arg_list = [arg.displayname for arg in src_node.walk_preorder() if arg.kind == cl.CursorKind.PARM_DECL ]
           nodes.append(Node('function', src_node.spelling, src_node.location.line if src_node.kind != cl.CursorKind.FUNCTION_TEMPLATE else src_node.location.line - 1, arg_list, src_node.result_type.spelling))
-        elif type_mapping[src_node.kind] == 'class':
+        elif type_mapping[src_node.kind] == 'class': # handle kinds that look like classes
           nodes.append(Node('class', src_node.spelling, src_node.location.line if src_node.kind != cl.CursorKind.CLASS_TEMPLATE else src_node.location.line - 1, [], src_node.result_type.spelling))
 
     return nodes
