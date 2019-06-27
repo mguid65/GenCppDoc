@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 import subprocess
+import get_includes
 
 import clang.cindex as cl
 from collections import namedtuple
@@ -89,8 +90,9 @@ class DocStringBuilder():
 ''' Doc writer to parse a file and generate doc nodes for writing '''
 class CppDocWriter():
   ''' Initialize a CppDocWriter '''
-  def __init__(self, args):
+  def __init__(self, args, inc_list):
     self.args = args
+    self.inc_list = inc_list
     self.filename = args.filename
     self.src_file = open(self.filename, 'r')
     self.file_data = self.src_file.readlines()
@@ -100,8 +102,7 @@ class CppDocWriter():
   ''' Parse a source file using libclang to get information about the nodes in this file '''
   def parse(self):
     index = cl.Index.create()
-    tu = index.parse(self.filename, args=['-x', 'c++', '--std=c++17', '-isystem'+includes[0:-1]], options=1|2|64)
-
+    tu = index.parse(self.filename, args=['-x', 'c++', '-nostdinc', '-std=c++17', '-isystem', includes[0:-1]] + self.inc_list, options=1|2|64)
     if self.args.verbose:
       diagnostic = tu.diagnostics
       for item in diagnostic:
@@ -155,7 +156,9 @@ def main():
 
   args = parser.parse_args()
 
-  cdw = CppDocWriter(args)
+  inc_list = get_includes.BuildIncList().get_includes()
+
+  cdw = CppDocWriter(args, inc_list)
   cdw.parse()
   cdw.write()
 
