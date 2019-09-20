@@ -113,7 +113,7 @@ class CppDocWriter():
     nodes = list()
 
     for src_node in children:
-      if src_node.kind in type_mapping.keys() and src_node.location.file.name == self.filename:
+      if src_node.kind in type_mapping.keys() and src_node.location.file.name == self.filename and src_node.raw_comment is None:
         if type_mapping[src_node.kind] == 'function': # handle kinds that look like functions
           arg_list = [arg.displayname for arg in src_node.get_arguments()]
 
@@ -138,9 +138,10 @@ class CppDocWriter():
     for line, doc in reversed(docstrings.items()):
       indent = len(self.file_data[line-1]) - len(self.file_data[line-1].lstrip())
       line_counter = line-1
-      for doc_line in doc.splitlines(True):
-        self.file_data.insert(line_counter, ' '*indent  + doc_line)
-        line_counter += 1
+      if '*/' not in self.file_data[line]:
+        for doc_line in doc.splitlines(True):
+          self.file_data.insert(line_counter, ' '*indent  + doc_line)
+          line_counter += 1
       self.file_data.insert(line-1, '\n')
 
     os.rename(self.filename, self.filename + '.bak')
